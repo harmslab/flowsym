@@ -6,11 +6,67 @@ Created on Mon Jan 20 09:57:16 2020
 """
 import numpy as np
 import pandas as pd
-import math
 
 
 
-def create_sample(size,ex,em):
+def create_controls(size,colors=['Blue','Green','Red','Far_red','NIR','IR']):
+    """
+    This is a function that takes a dataframe size (i.e. number of controls) and 
+    a list of colors the user wants to run controls for
+    """
+    
+    # Check to make sure the inputs were of correct type 
+    if type(size) != int:
+        raise TypeError("size cannot be of type: "+str(type(size)))
+    elif type(colors) != list:
+        raise TypeError("Ex cannot be of type: "+str(type(colors)))
+            
+        
+    # Controls data - accept whatever colors the user provides
+    controls_dict = {}
+    for i in colors:
+        controls_dict[i] = {'Excitation':[],'Emission':[]}
+    
+    # Excitation and emission data for each color control - pre-defined information
+    excitation_dict = {'green':[list(range(435,525))],'red':[list(range(450,588))],
+                    'blue':[list(range(336,440))],'far_red':[list(range(540,673))],
+                    'nir':[list(range(560,722))],'ir':[list(range(540,810))]}
+    
+    emission_dict = {'green':[list(range(492,590))],'red':[list(range(555,640))],
+                    'blue':[list(range(425,530))],'far_red':[list(range(623,740))],
+                    'nir':[list(range(655,815))],'ir':[list(range(731,845))]}
+    
+    
+    # Match colors that the user wants to excitation and emission data
+    for key, value in controls_dict.items():
+        key = key.lower()     # Doesn't matter if user entered capital letters or not
+        if key in excitation_dict:
+            value['Excitation'] = excitation_dict[key]
+            value['Emission'] = emission_dict[key]
+        else:
+            raise NameError(str(key) + ' is not an available control, try: ' + 
+                            str(list(excitation_dict.keys())))
+       
+    # Create a new dictionary that will keep the associated colors with dataframe objects
+    results_dict = {}
+    for key,value in controls_dict.items():
+        results_dict[key] = pd.DataFrame(value)
+    
+    
+    # Finally, create a list that will hold all DFs while preserving color order
+    final_control_results = []
+    for i in colors:
+        final_control_results.append(pd.concat([results_dict[i]]*size,ignore_index=True))
+
+    # Return tuple of the list for easy access of colors
+    return tuple(final_control_results)
+
+
+
+
+
+
+def create_sample(size,colors=['Blue','Green','Red','Far_red','NIR','IR']):
     """
     This is a function that takes a defined dataframe length for number of samples (int)
     and excitation and emission wavelengths (list,list)
@@ -19,37 +75,47 @@ def create_sample(size,ex,em):
     # Check to make sure the inputs were of correct type 
     if type(size) != int:
         raise TypeError("size cannot be of type: "+str(type(size)))
-    elif type(ex) != list:
-        raise TypeError("Ex cannot be of type: "+str(type(ex)))
-    elif type(em) != list:
-        raise TypeError("Em cannot be of type: "+str(type(em)))
+    elif type(colors) != list:
+        raise TypeError("Ex cannot be of type: "+str(type(colors)))
+    
         
+        
+    # Excitation and emission data for each color - pre-defined information
+    excitation_dict = {'green':list(range(435,525)),'red':list(range(450,588)),
+                       'blue':list(range(336,440)),'far_red':list(range(540,673)),
+                       'nir':list(range(560,722)),'ir':list(range(540,810))}
+    
+    emission_dict = {'green':list(range(492,590)),'red':list(range(555,640)),
+                     'blue':list(range(425,530)),'far_red':list(range(623,740)),
+                     'nir':list(range(655,815)),'ir':list(range(731,845))}
+    
     # Set dictionary to be made into dataframe
-    data_dict = {'Excitation': [],'Emission': []}
+    sample_dict = {'Excitation': [],'Emission': []}
     
     # Make "size" number of cell entries
     for i in range(size):
-        samp_index = np.random.choice(list(range(0,len(ex))))   # For sample, pick some wavelength
+        color_to_pick = np.random.choice(colors).lower()
         
-        data_dict['Excitation'].append(ex[samp_index])
-        data_dict['Emission'].append(em[samp_index])
+        sample_dict['Excitation'].append(excitation_dict[color_to_pick])
+        sample_dict['Emission'].append(emission_dict[color_to_pick])
         
     # Return just the sample dataframe 
-    return (pd.DataFrame(data_dict))
+    return (pd.DataFrame(sample_dict))
+
+
+
+
 
 
 # Run the code outside of defining functions 
 if __name__ == "__main__": 
     
     sample_size = 100
-    ex_wavelengths = [300,400,500,600]
-    em_wavelengths = [350,450,550,650]
-
     
-    result = create_sample(sample_size,ex_wavelengths,em_wavelengths)
-    for index, value in enumerate(result['Excitation']):
-        print(value,result['Emission'][index])
-
+    sample = create_sample(sample_size,['green','red'])
+    red,green = create_controls(sample_size,colors=['Red','Green'])
+    
+    print(sample)
 
 
 
