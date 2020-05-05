@@ -6,6 +6,11 @@ Created on Mon Jan 20 09:57:16 2020
 """
 import numpy as np
 import pandas as pd
+import time 
+#from __init__ import spectrum_data
+
+# Temp - init file in same directory screws up pytest run
+spectrum_data= pd.read_csv('https://raw.githubusercontent.com/mshavlik/FACSimulator/master/FPbase_Spectra.csv').fillna(value=0)
 
 
 
@@ -25,24 +30,52 @@ def create_controls(size,colors=['Blue','Green','Red','Far_red','NIR','IR']):
     # Controls data - accept whatever colors the user provides
     controls_dict = {}
     for i in colors:
-        controls_dict[i] = {'Excitation':[],'Emission':[]}
+        controls_dict[i] = {'Wavelength':[],'Excitation Efficiency':[], 'Emission Efficiency':[]}
+        
+        
+        
+    # Make excitation and emission data easier to read in to dictionary
+    wavelengths = spectrum_data['Wavelength']
+    
+    green_ex_efficiency = spectrum_data['Fluorescein (FITC) EX']
+    red_ex_efficiency = spectrum_data['Kaede (Red) EX']
+    blue_ex_efficiency = spectrum_data['Pacific Blue EX']
+    far_red_ex_efficiency = spectrum_data['APC (allophycocyanin)']
+    NIR_ex_efficiency = spectrum_data['PerCP-Cy5.5']
+    IR_ex_efficiency = spectrum_data['APC/Cy7 EX']
+    
+    
     
     # Excitation and emission data for each color control - pre-defined information
-    excitation_dict = {'green':[list(range(435,525))],'red':[list(range(450,588))],
-                    'blue':[list(range(336,440))],'far_red':[list(range(540,673))],
-                    'nir':[list(range(560,722))],'ir':[list(range(540,810))]}
+    excitation_dict = {'green':[list(wavelengths),list(green_ex_efficiency)],'red':[list(wavelengths),list(red_ex_efficiency)],
+                    'blue':[list(wavelengths),list(blue_ex_efficiency)],'far_red':[list(wavelengths),list(far_red_ex_efficiency)],
+                    'nir':[list(wavelengths),list(NIR_ex_efficiency)],'ir':[list(wavelengths),list(IR_ex_efficiency)]}
     
-    emission_dict = {'green':[list(range(492,590))],'red':[list(range(555,640))],
-                    'blue':[list(range(425,530))],'far_red':[list(range(623,740))],
-                    'nir':[list(range(655,815))],'ir':[list(range(731,845))]}
+    
+    
+    # Make excitation and emission data easier to read in to dictionary
+    green_em_efficiency = spectrum_data['Fluorescein (FITC) EM']
+    red_em_efficiency = spectrum_data['Kaede (Red) EM']
+    blue_em_efficiency = spectrum_data['Pacific Blue EM']
+    far_red_em_efficiency = spectrum_data['APC (allophycocyanin) EM']
+    NIR_em_efficiency = spectrum_data['PerCP-Cy5.5 EM']
+    IR_em_efficiency = spectrum_data['APC/Cy7 EM']
+    
+    
+    # Excitation and emission data for each color control - pre-defined information
+    emission_dict = {'green':[list(wavelengths),list(green_em_efficiency)],'red':[list(wavelengths),list(red_em_efficiency)],
+                    'blue':[list(wavelengths),list(blue_em_efficiency)],'far_red':[list(wavelengths),list(far_red_em_efficiency)],
+                    'nir':[list(wavelengths),list(NIR_em_efficiency)],'ir':[list(wavelengths),list(IR_em_efficiency)]}
     
     
     # Match colors that the user wants to excitation and emission data
     for key, value in controls_dict.items():
         key = key.lower()     # Doesn't matter if user entered capital letters or not
         if key in excitation_dict:
-            value['Excitation'] = excitation_dict[key]
-            value['Emission'] = emission_dict[key]
+            value['Wavelength'] = [excitation_dict[key][0]]
+            value['Excitation Efficiency'] = [excitation_dict[key][1]]
+            value['Emission Efficiency'] = [emission_dict[key][1]]
+            
         else:
             raise NameError(str(key) + ' is not an available control, try: ' + 
                             str(list(excitation_dict.keys())))
@@ -78,44 +111,167 @@ def create_sample(size,colors=['Blue','Green','Red','Far_red','NIR','IR']):
     elif type(colors) != list:
         raise TypeError("Ex cannot be of type: "+str(type(colors)))
     
-        
-        
-    # Excitation and emission data for each color - pre-defined information
-    excitation_dict = {'green':list(range(435,525)),'red':list(range(450,588)),
-                       'blue':list(range(336,440)),'far_red':list(range(540,673)),
-                       'nir':list(range(560,722)),'ir':list(range(540,810))}
+    # Make excitation and emission data easier to read in to dictionary
+    wavelengths = spectrum_data['Wavelength']
     
-    emission_dict = {'green':list(range(492,590)),'red':list(range(555,640)),
-                     'blue':list(range(425,530)),'far_red':list(range(623,740)),
-                     'nir':list(range(655,815)),'ir':list(range(731,845))}
+    green_ex_efficiency = spectrum_data['Fluorescein (FITC) EX']
+    red_ex_efficiency = spectrum_data['Kaede (Red) EX']
+    blue_ex_efficiency = spectrum_data['Pacific Blue EX']
+    far_red_ex_efficiency = spectrum_data['APC (allophycocyanin)']
+    NIR_ex_efficiency = spectrum_data['PerCP-Cy5.5']
+    IR_ex_efficiency = spectrum_data['APC/Cy7 EX']
+    
+    
+    
+    # Excitation and emission data for each color control - pre-defined information
+    excitation_dict = {'green':[list(wavelengths),list(green_ex_efficiency)],'red':[list(wavelengths),list(red_ex_efficiency)],
+                    'blue':[list(wavelengths),list(blue_ex_efficiency)],'far_red':[list(wavelengths),list(far_red_ex_efficiency)],
+                    'nir':[list(wavelengths),list(NIR_ex_efficiency)],'ir':[list(wavelengths),list(IR_ex_efficiency)]}
+    
+    
+    # Make excitation and emission data easier to read in to dictionary
+    green_em_efficiency = spectrum_data['Fluorescein (FITC) EM']
+    red_em_efficiency = spectrum_data['Kaede (Red) EM']
+    blue_em_efficiency = spectrum_data['Pacific Blue EM']
+    far_red_em_efficiency = spectrum_data['APC (allophycocyanin) EM']
+    NIR_em_efficiency = spectrum_data['PerCP-Cy5.5 EM']
+    IR_em_efficiency = spectrum_data['APC/Cy7 EM']
+    
+    
+    # Excitation and emission data for each color control - pre-defined information
+    emission_dict = {'green':[list(wavelengths),list(green_em_efficiency)],'red':[list(wavelengths),list(red_em_efficiency)],
+                    'blue':[list(wavelengths),list(blue_em_efficiency)],'far_red':[list(wavelengths),list(far_red_em_efficiency)],
+                    'nir':[list(wavelengths),list(NIR_em_efficiency)],'ir':[list(wavelengths),list(IR_em_efficiency)]}
     
     # Set dictionary to be made into dataframe
-    sample_dict = {'Excitation': [],'Emission': []}
+    sample_dict = {'Wavelength':[],'Excitation Efficiency':[], 'Emission Efficiency':[]}
     
     # Make "size" number of cell entries
     for i in range(size):
         color_to_pick = np.random.choice(colors).lower()
         
-        sample_dict['Excitation'].append(excitation_dict[color_to_pick])
-        sample_dict['Emission'].append(emission_dict[color_to_pick])
+        sample_dict['Wavelength'].append(excitation_dict[color_to_pick][0])
+        sample_dict['Excitation Efficiency'].append(excitation_dict[color_to_pick][1])
+        sample_dict['Emission Efficiency'].append(emission_dict[color_to_pick][1])
         
+    data = pd.DataFrame(sample_dict)
+    
+    #Create protein copy number
+    copies = np.round(np.random.normal(100,size=len(data),scale=8))
+    data['Copy number'] = copies
+    
     # Return just the sample dataframe 
-    return (pd.DataFrame(sample_dict))
+    return data
 
 
 
 
 
+# Bandwidth on lasers is +-5 nm. channels are [450+-25, 525+-25, 600+-30, 665+-15, 720+-30, 785+-30] for filter set 2
+def measure(dataframe,lasers=[405,488,561,638],channels=[1,2,3,4,5,6]):
+    """
+    This is a function that will measure fluorescence intensity for any given sample
+    dataframe and laser/channel parameters. Output will be a new dataframe with
+    len(input_dataframe) entries and fluorescence intensity values for each channel
+    """
+    # Bandwidth for each fluorescence channel
+    channels_information = {1:list(range(425,475)),2:list(range(500,550)),3:list(range(570,630)),4:list(range(650,680)),
+                            5:list(range(690,750)),6:list(range(755,805))}
+
+
+    # This is the list that will hold all of the intensity vectors for each cell
+    new_dataframe_list = [['FL'+str(i) for i in channels]]
+    
+    # where are our laser wavelengths in our input dataframe?
+    laser_indices = {}
+    
+    # For each laser, find the indices for their wavelengths and their gaussian efficiencies 
+    for laser in lasers:
+        # This part makes a gaussian distribution of each laser+-5
+        counts_dict = {}
+        myarray = np.array(np.round(np.random.normal(loc=laser,scale=2.0,size=10000)))
+        new_array = [x for x in myarray if laser+5 >= x >= laser-5]
+        
+        for i in new_array:
+            if i not in counts_dict.keys():
+                counts_dict[i] = list(new_array).count(i)
+                
+        max_count = max(counts_dict.values())
+
+        for key, value in counts_dict.items():
+            counts_dict[key] = value/max_count
+        
+        # Find the wavelength indices that our lasers hit - make a dictionary with indices as keys and laser efficiencies as values
+        for index2, wave in enumerate(dataframe['Wavelength'][0]):
+            if wave in counts_dict.keys():
+                laser_indices[index2] = counts_dict[wave]
+
+    
+    
+    # figure out unique emission profiles based on color so we know when to end the loop
+    copy = dataframe.copy()
+    copy['Emission Efficiency'] = copy['Emission Efficiency'].astype(str)
+    
+    
+    # Create numpy arrays to randomly sample from based on the number of excited molecules
+    emission_reference = {}
+    
+    for index, row in dataframe.iterrows():
+        if str(row['Emission Efficiency']) not in emission_reference.keys():
+            waves_to_add = np.array([round(value*100)*[row['Wavelength'][index]] for index, value in enumerate(row['Emission Efficiency']) if value >=0.01])
+            emission_reference[str(row['Emission Efficiency'])] = np.array([y for x in waves_to_add for y in x])
+        
+        if len(emission_reference.keys()) == len(copy['Emission Efficiency'].unique()):
+            break
+    
+
+    
+    # for each cell that is being analyzed
+    for index, row in dataframe.iterrows():
+        intensity_vector = []
+                
+        # Calculate peak excitation efficiency for our cell given all lasers at once (collinear laser set up)
+        excitation_max = max([row['Excitation Efficiency'][key] * value for key, value in laser_indices.items()])
+        num_excited_proteins = round(row['Copy number'] * excitation_max)
+        
+        
+        # Sample emission at wavelengths corresponding to real emission efficiency from FPbase, size=number of excited proteins
+        real_emission_wavelengths = np.random.choice(emission_reference[str(row['Emission Efficiency'])],size=num_excited_proteins)
+
+        
+        # For each fluorescence channel, find the appropriate emission values
+        for channel in channels:
+            em_chan = channels_information[channel]
+            
+            # Find intensity in each channel - NOTE using intersection and set here speed up the code DRAMATICALLY
+            emission_intensity = len(set(real_emission_wavelengths).intersection(em_chan)) * (1000 + np.random.normal(0,scale=50))   # Average amplification +- noise
+            
+            # add intensity in each channel to the vector
+            intensity_vector.append(float(emission_intensity))
+    
+        
+    
+        new_dataframe_list.append(intensity_vector)
+        
+    column_names = new_dataframe_list.pop(0)
+
+    # Create new dataframe and output
+    output = pd.DataFrame(new_dataframe_list,columns=column_names)
+    
+    return output
 
 # Run the code outside of defining functions 
 if __name__ == "__main__": 
     
-    sample_size = 100
+    sample_size = 5000
     
-    sample = create_sample(sample_size,['green','red'])
-    red,green = create_controls(sample_size,colors=['Red','Green'])
+    sample = create_sample(sample_size)
     
-    print(sample)
+    start = time.time()
+    measurements = measure(sample)
+    stop = time.time()
+    print("Time to run measure was " + str(round(stop-start,3)) + " seconds")
+    
 
 
 
