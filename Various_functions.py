@@ -6,6 +6,7 @@ Created on Mon Jan 20 09:57:16 2020
 """
 import numpy as np
 import pandas as pd
+import time 
 #from __init__ import spectrum_data
 
 # Temp - init file in same directory screws up pytest run
@@ -153,8 +154,14 @@ def create_sample(size,colors=['Blue','Green','Red','Far_red','NIR','IR']):
         sample_dict['Excitation Efficiency'].append(excitation_dict[color_to_pick][1])
         sample_dict['Emission Efficiency'].append(emission_dict[color_to_pick][1])
         
+    data = pd.DataFrame(sample_dict)
+    
+    #Create protein copy number
+    copies = np.round(np.random.normal(100,size=len(data),scale=8))
+    data['Copy number'] = copies
+    
     # Return just the sample dataframe 
-    return (pd.DataFrame(sample_dict))
+    return data
 
 
 
@@ -176,40 +183,73 @@ def measure(dataframe,lasers=[405,488,561,638],channels=[1,2,3,4,5,6]):
     new_dataframe_list = [['FL'+str(i) for i in channels]]
     
     # where are our laser wavelengths in our input dataframe?
-    laser_indices = []
+    laser_indices = {}
     
-    # For each laser, find the indices for their wavelengths so we can get excitation efficiencies later
+    # For each laser, find the indices for their wavelengths and their gaussian efficiencies 
     for laser in lasers:
-        for index2, wave in enumerate(dataframe['Wavelength'][0]):
-            if wave in list(range(laser-5,laser+5)):
-                laser_indices.append(index2)
+        # This part makes a gaussian distribution of each laser+-5
+        counts_dict = {}
+        myarray = np.array(np.round(np.random.normal(loc=laser,scale=2.0,size=10000)))
+        new_array = [x for x in myarray if laser+5 >= x >= laser-5]
+        
+        for i in new_array:
+            if i not in counts_dict.keys():
+                counts_dict[i] = list(new_array).count(i)
                 
+        max_count = max(counts_dict.values())
+
+        for key, value in counts_dict.items():
+            counts_dict[key] = value/max_count
+        
+        # Find the wavelength indices that our lasers hit - make a dictionary with indices as keys and laser efficiencies as values
+        for index2, wave in enumerate(dataframe['Wavelength'][0]):
+            if wave in counts_dict.keys():
+                laser_indices[index2] = counts_dict[wave]
+
+    
+    
+    # figure out unique emission profiles based on color so we know when to end the loop
+    copy = dataframe.copy()
+    copy['Emission Efficiency'] = copy['Emission Efficiency'].astype(str)
+    
+    
+    # Create numpy arrays to randomly sample from based on the number of excited molecules
+    emission_reference = {}
+    
+    for index, row in dataframe.iterrows():
+        if str(row['Emission Efficiency']) not in emission_reference.keys():
+            waves_to_add = np.array([round(value*100)*[row['Wavelength'][index]] for index, value in enumerate(row['Emission Efficiency']) if value >=0.01])
+            emission_reference[str(row['Emission Efficiency'])] = np.array([y for x in waves_to_add for y in x])
+        
+        if len(emission_reference.keys()) == len(copy['Emission Efficiency'].unique()):
+            break
+    
+
+    
     # for each cell that is being analyzed
     for index, row in dataframe.iterrows():
         intensity_vector = []
                 
         # Calculate peak excitation efficiency for our cell given all lasers at once (collinear laser set up)
-        excitation_max = max([row['Excitation Efficiency'][x] for x in laser_indices])
-        
-        # Define an amplification for the signal, add some noise to it
-        amplification = np.random.normal(10**3,size=1) * np.random.uniform(0.75,1.25)
-        amplified_signal = amplification*excitation_max
-            
+        excitation_max = max([row['Excitation Efficiency'][key] * value for key, value in laser_indices.items()])
+        num_excited_proteins = round(row['Copy number'] * excitation_max)
         
         
-        # For each fluorescence channel, find the appropriate emission efficiencies for given wavelengths
+        # Sample emission at wavelengths corresponding to real emission efficiency from FPbase, size=number of excited proteins
+        real_emission_wavelengths = np.random.choice(emission_reference[str(row['Emission Efficiency'])],size=num_excited_proteins)
+
+        
+        # For each fluorescence channel, find the appropriate emission values
         for channel in channels:
-            channel_indices = []
             em_chan = channels_information[channel]
-            for index2, wave in enumerate(row['Wavelength']):
-                if wave in em_chan:
-                    channel_indices.append(index2)
             
-            # Calculate an emmision intensity based on noise, emission efficiency, and the excitation signal
-            emission_intensity = max([row['Emission Efficiency'][x] for x in channel_indices]) * amplified_signal * np.random.uniform(3,size=1)
+            # Find intensity in each channel - NOTE using intersection and set here speed up the code DRAMATICALLY
+            emission_intensity = len(set(real_emission_wavelengths).intersection(em_chan)) * (1000 + np.random.normal(0,scale=50))   # Average amplification +- noise
+            
+            # add intensity in each channel to the vector
             intensity_vector.append(float(emission_intensity))
     
-
+        
     
         new_dataframe_list.append(intensity_vector)
         
@@ -223,12 +263,14 @@ def measure(dataframe,lasers=[405,488,561,638],channels=[1,2,3,4,5,6]):
 # Run the code outside of defining functions 
 if __name__ == "__main__": 
     
-    sample_size = 100
+    sample_size = 5000
     
-    sample = create_sample(sample_size,['green','red'])
+    sample = create_sample(sample_size)
     
+    start = time.time()
     measurements = measure(sample)
-    
+    stop = time.time()
+    print("Time to run measure was " + str(round(stop-start,3)) + " seconds")
     
 
 

@@ -23,16 +23,17 @@ def test_create_controls():
     
     assert len(greens) == 10   # Did we output dataframe of correct size?
     assert type(reds) == type(pd.DataFrame())   # Did we output an actual dataframe object?
-    assert list(greens.columns) == ['Excitation','Emission']  # Did we make the right columns?
+    assert list(greens.columns) == ['Wavelength','Excitation Efficiency', 'Emission Efficiency']  # Did we make the right columns?
     
-    # Check to make sure green excitations and emissions arent the same as red
+    # Check to make sure wavelengths are equal
     for index, val in greens.iterrows():
-        assert val['Excitation'] != reds['Excitation'][index]
-        assert val['Emission'] != reds['Emission'][index]
+        assert val['Wavelength'] == reds['Wavelength'][index]
+        assert val['Excitation Efficiency'] != reds['Excitation Efficiency'][index]
+        assert val['Emission Efficiency'] != reds['Emission Efficiency'][index]
         
-    # Make sure all excitation or emission wavelengths are the same in a given dataframe
-    assert greens['Excitation'][0] == greens['Excitation'][np.random.choice(range(1,len(greens)))]
-    assert reds['Emission'][0] == reds['Emission'][np.random.choice(range(1,len(reds)))]
+    # Make sure all excitation or emission efficiencies are the same in a given dataframe
+    assert greens['Excitation Efficiency'][0] == greens['Excitation Efficiency'][np.random.choice(range(1,len(greens)))]
+    assert reds['Emission Efficiency'][0] == reds['Emission Efficiency'][np.random.choice(range(1,len(reds)))]
     
     
     
@@ -45,11 +46,11 @@ def test_create_sample():
     
     assert len(sample) == 10   # Is dataframe correct size from input step?
     assert type(sample) == type(pd.DataFrame())   # Did we actually output a dataframe?
-    assert list(sample.columns) == ['Excitation','Emission']  # Are these the two columns?
+    assert list(sample.columns) == ['Wavelength','Excitation Efficiency','Emission Efficiency','Copy number']  # Are these the columns?
     
     # Check to make sure excitation wavelengths aren't the same as emission
     for index, val in sample.iterrows():
-        assert val['Excitation'] != val['Emission']
+        assert val['Excitation Efficiency'] != val['Emission Efficiency']
 
 
 
@@ -67,3 +68,14 @@ def controls():
     
     return blue,green,red,far_red,NIR,IR
 
+
+
+def test_measure(sample):
+    
+    measured = vf.measure(sample)
+    
+    assert len(list(measured.columns)) == 6
+    assert type(measured) == type(pd.DataFrame())
+    
+    
+    
