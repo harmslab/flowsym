@@ -4,17 +4,26 @@ Created on Mon Jan 20 09:57:16 2020
 
 @author: Michael
 """
+
+# Check to see if fcsy is installed on machine 
+import importlib.util
+package_name='fcsy'
+spec = importlib.util.find_spec(package_name)
+if spec is None:
+    print(package_name +" is not installed, " + "please install " + package_name + " to write fcs files in the 'measure' function!")
+
 import numpy as np
 import pandas as pd
 import time 
+from fcsy.fcs import write_fcs
 #from __init__ import spectrum_data
 
 # Temp - init file in same directory screws up pytest run
-spectrum_data= pd.read_csv('https://raw.githubusercontent.com/mshavlik/FACSimulator/master/FPbase_Spectra.csv').fillna(value=0)
+spectrum_data= pd.read_csv('https://raw.githubusercontent.com/mshavlik/FACSimulator/master/FPbase_Spectra_updated.csv').fillna(value=0)
 
 
 
-def create_controls(size,colors=['Blue','Green','Red','Far_red','NIR','IR']):
+def create_controls(size,colors=['Blue','Cyan','Green','Yellow','Orange','Red','Far_red','NIR','IR']):
     """
     This is a function that takes a dataframe size (i.e. number of controls) and 
     a list of colors the user wants to run controls for
@@ -40,16 +49,21 @@ def create_controls(size,colors=['Blue','Green','Red','Far_red','NIR','IR']):
     green_ex_efficiency = spectrum_data['Fluorescein (FITC) EX']
     red_ex_efficiency = spectrum_data['Kaede (Red) EX']
     blue_ex_efficiency = spectrum_data['Pacific Blue EX']
-    far_red_ex_efficiency = spectrum_data['APC (allophycocyanin)']
-    NIR_ex_efficiency = spectrum_data['PerCP-Cy5.5']
+    far_red_ex_efficiency = spectrum_data['APC (allophycocyanin) AB']
+    NIR_ex_efficiency = spectrum_data['PerCP-Cy5.5 AB']
     IR_ex_efficiency = spectrum_data['APC/Cy7 EX']
+    cyan_ex_efficiency = spectrum_data['CFP EX']
+    yellow_ex_efficiency = spectrum_data['EYFP EX']
+    orange_ex_efficiency = spectrum_data['mOrange EX']
     
     
     
     # Excitation and emission data for each color control - pre-defined information
     excitation_dict = {'green':[list(wavelengths),list(green_ex_efficiency)],'red':[list(wavelengths),list(red_ex_efficiency)],
                     'blue':[list(wavelengths),list(blue_ex_efficiency)],'far_red':[list(wavelengths),list(far_red_ex_efficiency)],
-                    'nir':[list(wavelengths),list(NIR_ex_efficiency)],'ir':[list(wavelengths),list(IR_ex_efficiency)]}
+                    'nir':[list(wavelengths),list(NIR_ex_efficiency)],'ir':[list(wavelengths),list(IR_ex_efficiency)],
+                    'cyan':[list(wavelengths),list(cyan_ex_efficiency)],'yellow':[list(wavelengths),list(yellow_ex_efficiency)],
+                    'orange':[list(wavelengths),list(orange_ex_efficiency)]}
     
     
     
@@ -60,12 +74,17 @@ def create_controls(size,colors=['Blue','Green','Red','Far_red','NIR','IR']):
     far_red_em_efficiency = spectrum_data['APC (allophycocyanin) EM']
     NIR_em_efficiency = spectrum_data['PerCP-Cy5.5 EM']
     IR_em_efficiency = spectrum_data['APC/Cy7 EM']
+    cyan_em_efficiency = spectrum_data['CFP EM']
+    yellow_em_efficiency = spectrum_data['EYFP EM']
+    orange_em_efficiency = spectrum_data['mOrange EM']
     
     
     # Excitation and emission data for each color control - pre-defined information
     emission_dict = {'green':[list(wavelengths),list(green_em_efficiency)],'red':[list(wavelengths),list(red_em_efficiency)],
                     'blue':[list(wavelengths),list(blue_em_efficiency)],'far_red':[list(wavelengths),list(far_red_em_efficiency)],
-                    'nir':[list(wavelengths),list(NIR_em_efficiency)],'ir':[list(wavelengths),list(IR_em_efficiency)]}
+                    'nir':[list(wavelengths),list(NIR_em_efficiency)],'ir':[list(wavelengths),list(IR_em_efficiency)],
+                    'cyan':[list(wavelengths),list(cyan_em_efficiency)],'yellow':[list(wavelengths),list(yellow_em_efficiency)],
+                    'orange':[list(wavelengths),list(orange_em_efficiency)]}
     
     
     # Match colors that the user wants to excitation and emission data
@@ -99,10 +118,11 @@ def create_controls(size,colors=['Blue','Green','Red','Far_red','NIR','IR']):
 
 
 
-def create_sample(size,colors=['Blue','Green','Red','Far_red','NIR','IR']):
+def create_sample(size,colors=['Blue','Cyan','Green','Yellow','Orange','Red','Far_red','NIR','IR'],weights=[]):
     """
     This is a function that takes a defined dataframe length for number of samples (int)
-    and excitation and emission wavelengths (list,list)
+    and excitation and emission wavelengths (list,list). Assumes equal probability of each
+    color unless specified by the user
     """
     
     # Check to make sure the inputs were of correct type 
@@ -117,16 +137,20 @@ def create_sample(size,colors=['Blue','Green','Red','Far_red','NIR','IR']):
     green_ex_efficiency = spectrum_data['Fluorescein (FITC) EX']
     red_ex_efficiency = spectrum_data['Kaede (Red) EX']
     blue_ex_efficiency = spectrum_data['Pacific Blue EX']
-    far_red_ex_efficiency = spectrum_data['APC (allophycocyanin)']
-    NIR_ex_efficiency = spectrum_data['PerCP-Cy5.5']
+    far_red_ex_efficiency = spectrum_data['APC (allophycocyanin) AB']
+    NIR_ex_efficiency = spectrum_data['PerCP-Cy5.5 AB']
     IR_ex_efficiency = spectrum_data['APC/Cy7 EX']
-    
+    cyan_ex_efficiency = spectrum_data['CFP EX']
+    yellow_ex_efficiency = spectrum_data['EYFP EX']
+    orange_ex_efficiency = spectrum_data['mOrange EX']
     
     
     # Excitation and emission data for each color control - pre-defined information
     excitation_dict = {'green':[list(wavelengths),list(green_ex_efficiency)],'red':[list(wavelengths),list(red_ex_efficiency)],
                     'blue':[list(wavelengths),list(blue_ex_efficiency)],'far_red':[list(wavelengths),list(far_red_ex_efficiency)],
-                    'nir':[list(wavelengths),list(NIR_ex_efficiency)],'ir':[list(wavelengths),list(IR_ex_efficiency)]}
+                    'nir':[list(wavelengths),list(NIR_ex_efficiency)],'ir':[list(wavelengths),list(IR_ex_efficiency)],
+                    'cyan':[list(wavelengths),list(cyan_ex_efficiency)],'yellow':[list(wavelengths),list(yellow_ex_efficiency)],
+                    'orange':[list(wavelengths),list(orange_ex_efficiency)]}
     
     
     # Make excitation and emission data easier to read in to dictionary
@@ -136,19 +160,26 @@ def create_sample(size,colors=['Blue','Green','Red','Far_red','NIR','IR']):
     far_red_em_efficiency = spectrum_data['APC (allophycocyanin) EM']
     NIR_em_efficiency = spectrum_data['PerCP-Cy5.5 EM']
     IR_em_efficiency = spectrum_data['APC/Cy7 EM']
-    
+    cyan_em_efficiency = spectrum_data['CFP EM']
+    yellow_em_efficiency = spectrum_data['EYFP EM']
+    orange_em_efficiency = spectrum_data['mOrange EM']
     
     # Excitation and emission data for each color control - pre-defined information
     emission_dict = {'green':[list(wavelengths),list(green_em_efficiency)],'red':[list(wavelengths),list(red_em_efficiency)],
                     'blue':[list(wavelengths),list(blue_em_efficiency)],'far_red':[list(wavelengths),list(far_red_em_efficiency)],
-                    'nir':[list(wavelengths),list(NIR_em_efficiency)],'ir':[list(wavelengths),list(IR_em_efficiency)]}
+                    'nir':[list(wavelengths),list(NIR_em_efficiency)],'ir':[list(wavelengths),list(IR_em_efficiency)],
+                    'cyan':[list(wavelengths),list(cyan_em_efficiency)],'yellow':[list(wavelengths),list(yellow_em_efficiency)],
+                    'orange':[list(wavelengths),list(orange_em_efficiency)]}
     
     # Set dictionary to be made into dataframe
     sample_dict = {'Wavelength':[],'Excitation Efficiency':[], 'Emission Efficiency':[]}
     
     # Make "size" number of cell entries
     for i in range(size):
-        color_to_pick = np.random.choice(colors).lower()
+        if len(weights) == 0:
+            color_to_pick = np.random.choice(colors).lower()
+        else:
+            color_to_pick = np.random.choice(colors,p=weights).lower()
         
         sample_dict['Wavelength'].append(excitation_dict[color_to_pick][0])
         sample_dict['Excitation Efficiency'].append(excitation_dict[color_to_pick][1])
@@ -157,7 +188,7 @@ def create_sample(size,colors=['Blue','Green','Red','Far_red','NIR','IR']):
     data = pd.DataFrame(sample_dict)
     
     #Create protein copy number
-    copies = np.round(np.random.normal(100,size=len(data),scale=8))
+    copies = np.round(np.random.normal(100,size=len(data),scale=20))
     data['Copy number'] = copies
     
     # Return just the sample dataframe 
@@ -168,17 +199,21 @@ def create_sample(size,colors=['Blue','Green','Red','Far_red','NIR','IR']):
 
 
 # Bandwidth on lasers is +-5 nm. channels are [450+-25, 525+-25, 600+-30, 665+-15, 720+-30, 785+-30] for filter set 2
-def measure(dataframe,lasers=[405,488,561,638],channels=[1,2,3,4,5,6]):
+def measure(dataframe,lasers=[405,488,561,638],channels=[1,2,3,4,5,6],
+            create_fcs=True,outfile_name='sample_output.fcs'):
     """
     This is a function that will measure fluorescence intensity for any given sample
-    dataframe and laser/channel parameters. Output will be a new dataframe with
-    len(input_dataframe) entries and fluorescence intensity values for each channel
+    dataframe and laser/channel parameters. Output will be an fcs file (default) that is 
+    the same size as the sample you ran in the function. Alternatively, you can return
+    just a pandas dataframe object by setting return_fcs=False. The user can set the output
+    file name manually to simulate creating multiple samples and measurements.
     """
     # Bandwidth for each fluorescence channel
     channels_information = {1:list(range(425,475)),2:list(range(500,550)),3:list(range(570,630)),4:list(range(650,680)),
                             5:list(range(690,750)),6:list(range(755,805))}
 
 
+    
     # This is the list that will hold all of the intensity vectors for each cell
     new_dataframe_list = [['FL'+str(i) for i in channels]]
     
@@ -238,7 +273,7 @@ def measure(dataframe,lasers=[405,488,561,638],channels=[1,2,3,4,5,6]):
         # Sample emission at wavelengths corresponding to real emission efficiency from FPbase, size=number of excited proteins
         real_emission_wavelengths = np.random.choice(emission_reference[str(row['Emission Efficiency'])],size=num_excited_proteins)
 
-        
+        #amp = np.random.choice(list(range(1000,1700,40)))
         # For each fluorescence channel, find the appropriate emission values
         for channel in channels:
             em_chan = channels_information[channel]
@@ -258,12 +293,16 @@ def measure(dataframe,lasers=[405,488,561,638],channels=[1,2,3,4,5,6]):
     # Create new dataframe and output
     output = pd.DataFrame(new_dataframe_list,columns=column_names)
     
+    if create_fcs:
+        write_fcs(output,outfile_name)
+        print("FCS file created with filename: " + str(outfile_name))
+    
     return output
 
 # Run the code outside of defining functions 
 if __name__ == "__main__": 
     
-    sample_size = 5000
+    sample_size = 1000
     
     sample = create_sample(sample_size)
     
