@@ -7,7 +7,7 @@ Created on Thu Apr  2 11:29:28 2020
 """
 
 import pytest
-import facsim as vf
+import flowsym
 import pandas as pd
 import numpy as np
 
@@ -18,7 +18,7 @@ def test_create_controls():
     all of our control DataFrames correctly
     """
 
-    greens, reds = vf.create_controls(10, ['green', 'red'])  # Params for test function
+    greens, reds = flowsym.create_controls(10, ['green', 'red'])  # Params for test function
 
     assert len(greens) == 10  # Did we output dataframe of correct size?
     assert type(reds) == type(pd.DataFrame())  # Did we output an actual dataframe object?
@@ -41,7 +41,7 @@ def test_create_sample():
     """
     Test the create sample function to make sure we made our sample DataFrames correctly
     """
-    sample = vf.create_sample(10, ['blue', 'green', 'NIR'])  # Params for test function
+    sample = flowsym.create_sample(10, ['blue', 'green', 'NIR'])  # Params for test function
 
     assert len(sample) == 10  # Is dataframe correct size from input step?
     assert type(sample) == type(pd.DataFrame())  # Did we actually output a dataframe?
@@ -56,7 +56,7 @@ def test_create_sample():
 # Now that we've tested the create sample function, make a fixture for following function tests
 @pytest.fixture()
 def sample():
-    dataframe = vf.create_sample(100)
+    dataframe = flowsym.create_sample(100)
 
     return dataframe
 
@@ -64,13 +64,13 @@ def sample():
 # Now that we've tested the create controls function, make a fixture for following function tests
 @pytest.fixture()
 def controls():
-    blue, green, red, far_red, NIR, IR = vf.create_controls(100)
+    blue, green, red, far_red, NIR, IR = flowsym.create_controls(100)
 
     return blue, green, red, far_red, NIR, IR
 
 
 def test_measure(sample):
-    measured = vf.measure(sample)
+    measured = flowsym.measure(sample)
 
     assert len(list(measured.columns)) == 6
     assert type(measured) == type(pd.DataFrame())
