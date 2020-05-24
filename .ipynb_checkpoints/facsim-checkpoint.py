@@ -6,7 +6,7 @@ Created on Mon Jan 20 09:57:16 2020
 :author: Luis
 """
 
-# Check to see if fcsy and hdbscan are installed on machine 
+# Check to see if fcsy is installed on machine 
 import importlib.util
 
 package_name = 'fcsy'
@@ -15,28 +15,10 @@ if spec is None:
     print(
         f"{package_name} is not installed, please install {package_name} to write fcs files in the \'measure\' function!")
 
-package2_name = 'hdbscan'
-spec2 = importlib.util.find_spec(package2_name)
-if spec2 is None:
-    print(
-        f"{package2_name} is not installed, please install {package2_name} to cluster data in the \'cluster\' function!")
-    
-
-package3_name = 'unidip'
-spec3 = importlib.util.find_spec(package3_name)
-if spec3 is None:
-    print(
-        f"{package3_name} is not installed, please install {package3_name} to perform a dip test in the \'dip_test\' function!")
-
 import numpy as np
 import pandas as pd
 import time
 from fcsy.fcs import write_fcs
-import hdbscan
-import matplotlib.pyplot as plt
-import seaborn as sns
-from unidip import UniDip
-from copy import deepcopy
 
 # from __init__ import spectrum_data
 
@@ -111,8 +93,6 @@ def create_controls(size, colors=['Blue', 'Cyan', 'Green', 'Yellow', 'Orange', '
                      'yellow': [list(wavelengths), list(yellow_em_efficiency)],
                      'orange': [list(wavelengths), list(orange_em_efficiency)]}
 
-
-    
     # Match colors that the user wants to excitation and emission data
     for key, value in controls_dict.items():
         key = key.lower()  # Doesn't matter if user entered capital letters or not
@@ -130,16 +110,11 @@ def create_controls(size, colors=['Blue', 'Cyan', 'Green', 'Yellow', 'Orange', '
     for key, value in controls_dict.items():
         results_dict[key] = pd.DataFrame(value)
 
- 
     # Finally, create a list that will hold all DFs while preserving color order
     final_control_results = []
     for i in colors:
         final_control_results.append(pd.concat([results_dict[i]] * size, ignore_index=True))
 
-
-    for df in final_control_results:
-        df['Copy number'] = np.round(np.random.normal(100,size=size,scale=1))
-                
     # Return tuple of the list for easy access of colors
     return tuple(final_control_results)
 
@@ -330,237 +305,6 @@ def measure(dataframe, lasers=[405, 488, 561, 638], channels=[1, 2, 3, 4, 5, 6],
 
     return output
 
-
-
-def cluster(measured_data,min_cluster_size=50,savefig=True):
-    """
-    This is a function to cluster flow cytometry data that has been measured in fluorescence channels. 
-    The clustering method is a DBSCAN which clusters based on density of points in an unsupervised 
-    method. The number of clusters does not need to be explicitly stated by the users. The only 
-    parameter that needs to be optimized is min_cluster_size, which is set to 50 here. But I recommend 1% of the len(data)
-    Resulting plots are a bar chart showing the number of cells in each cluster and a heatmap of 
-    the median fluorescence intensity in each channel for each cluster
-    
-    Note that clusters that are labeled '0' are cells that the DBSCAN could not cluster
-    
-    Returns a tuple of two dictionaries. The first dictionary is the median fluorescence represented in the heatmap
-    while the second dictionary holds all the fluorescence vectors for each cluster. Both of these are needed 
-    for a dip test and reclustering
-    """
-    
-    # Create the clustering object
-    clusterer = hdbscan.HDBSCAN(min_cluster_size = min_cluster_size)
-    
-    # Perform the clustering
-    clusterer.fit(measured_data)
-    
-    # Find the number of cells in each cluster
-    clust_counts = {}
-
-    # clusters are 
-    for i in clusterer.labels_:
-        if i not in clust_counts.keys():
-            clust_counts[str(i+1)] = list(clusterer.labels_).count(i)
-            
-
-    X = []
-
-    # Make a 2d array of the vectors 
-    for index, row in measured_data.iterrows():
-        X.append([x for x in row])
-
-    # Make a dictionary for our clusters to hold their associated vectors
-    cluster_dict = {}
-    for cluster_num in clusterer.labels_:
-        if cluster_num not in cluster_dict.keys():
-            cluster_dict[cluster_num] = []
-
-    # Add the vector in each cluster
-    for index,vector in enumerate(X):
-        cluster_dict[clusterer.labels_[index]].append(vector) 
-
-
-    final_dictionary = {}
-
-    # Make a new dictionary which will have the median value for each channel in the vector for a heatmap downstream
-    for key, value in cluster_dict.items():
-        median_values = []
-        for i in range(len(value[0])):
-            median_values.append(np.median([row[i] for row in value]))
-            final_dictionary["Cluster " + str(key+1)] = median_values
-            
-    
-    df = pd.DataFrame(final_dictionary,index=list(measured_data.columns))
-
-
-
-    fig, ax = plt.subplots(1,2,figsize=(10,4))
-    sns.heatmap(df.transpose(),cmap='copper')
-
-    clust = []
-    count = []
-
-    for key, value in clust_counts.items():
-        clust.append(key)
-        count.append(value)
-    
-    y_pos = np.arange(len(clust))
-
-    ax[0].bar(y_pos,count,color='black')
-    ax[0].set_xticks(y_pos)
-    ax[0].set_xticklabels(clust)
-    ax[0].set_xlabel('Cluster')
-    ax[0].set_ylabel('Counts')
-    ax[0].set_title('Cells per cluster')
-
-    ax[1].set_title('Fluorescence profile of clusters')
-    ax[1].set_xlabel('Fluorescence channel')
-    plt.yticks(rotation=0)
-    plt.tight_layout()
-
-    if savefig:
-        plt.savefig("preliminary_clustering")
-
-
-    return (final_dictionary,cluster_dict)
-
-
-
-def dip_test(median_FL_data,total_data,alpha=0.05,savefig=True):
-    """
-    Perform a Hartigan's dip test to check for unimodality in clusters and splits clusters if bimodality is found. 
-    This function will take the highest intensity channel for each cluster and 
-    check for bimodality to correct for errors in clustering similar fluorescencep profiles.
-    Changing alpha will alter how stringent the dip test is. A higher alpha will result in higher detection
-    of bimodality, but runs a greater risk of false identification. It is important to note
-    that this dip test is relatively coarse grained and will not identify very slight populations
-    of mixed cells (e.g. 10 orange cells clustered with 1000 red cells)
-    
-    Returns an updated clustering of the primary clustering after performing a dip test
-    """
-    
-    # Create a copy of the dictionary so we can retain the original clustering data
-    change_dict = deepcopy(total_data)
-   
-    
-    # Make kde plots
-    if 'Cluster 0' in median_FL_data.keys():
-        fig, ax = plt.subplots(1,len(median_FL_data.keys())-1,figsize=(12,3))
-    
-    else:
-        fig, ax = plt.subplots(1,len(median_FL_data.keys()),figsize=(12,3))
-        
-    # Keep track of what plot we're on
-    i = 0
-    
-    # Get the index of the max fluorescence for each cluster
-    for key, value in median_FL_data.items():
-        cluster_max_FL_index = np.argmax(value)
-        
-        # As long as we aren't cluster one, do our dip test and plot
-        if int(key[-1])-1 != -1:
-            search_key = int(key[-1])-1
-
-            # Intensity in each cluster where the intensity is max
-            dat = [row[cluster_max_FL_index] for row in total_data[search_key]]
-        
-            # Do the dip test 
-            data = np.msort(dat)
-            intervals = UniDip(data,alpha=alpha).run()
-            print("Performing dip test on cluster " +str(search_key+1) + " ... ")
-            
-            # Show on the graph where the intervals are
-            for j in intervals:
-                ax[i].axvspan(data[j[0]],data[j[1]],color='lightblue',alpha=0.4)
-                for q in j:
-                    ax[i].axvline(data[q],color='red')
-                    
-        
-        # Split the clusters that failed the dip test into separate clusters
-            if len(intervals) > 1:
-                split_point = int(np.mean([intervals[0][1],intervals[1][0]]))
-                clust1 = data[:split_point]
-                clust2 = data[split_point:]
-                
-                # Reset current cluster number to cluster 1 and make a new cluster to the dictionary
-                print("Identified bimodality in cluster " + str(search_key+1) + ", reclustering data ... ")
-                change_dict[max(total_data.keys())+1] = [row for row in total_data[search_key] if row[cluster_max_FL_index] in clust2]
-                change_dict[search_key] = [row for row in total_data[search_key] if row[cluster_max_FL_index] in clust1]
-                
-                
-            # Plot data
-            sns.kdeplot(data,ax=ax[i],color='black')
-            
-            ax[i].set(title='Cluster ' + str(search_key+1),xlabel = 'FL ' + str(cluster_max_FL_index+1),yticks=[])
-            
-
-        # Move to the next plot
-            i += 1
-        
-        plt.tight_layout()
-        
-        # save first figure of the dip test 
-        if savefig:
-            plt.savefig("Dip_test_example")
-            
-            
-        final_reclustered = {}
-
-    # Make a new dictionary which will have the median value for each channel in the vector for a heatmap downstream
-    for key, value in change_dict.items():
-        med_values = []
-        for i in range(len(value[0])):
-            med_values.append(np.median([row[i] for row in value]))
-            final_reclustered["Cluster " + str(key+1)] = med_values
-
-    search = np.random.choice(list(median_FL_data.keys()))
-    
-
-    cols = ['FL' + str(i + 1) for i in range(len(median_FL_data[search]))]
-    
-    # Dataframe to create heatmap
-    reclustered_df = pd.DataFrame(final_reclustered,index=cols)
-
-
-    # Counts dictionary for barchart
-    reclustered_counts = {}
-
-    for key,value in change_dict.items():
-        reclustered_counts[key] = len(value)
-    
-        
-        # Replot the new clusters
-    print("Plotting reclustered data ...")
-        
-    fig2, ax = plt.subplots(1,2,figsize=(10,4))
-    sns.heatmap(reclustered_df.transpose(),cmap='copper')
-    
-    reclust = []
-    recount = []
-
-    for key, value in reclustered_counts.items():
-        reclust.append(int(key)+1)
-        recount.append(value)
-    
-    rey_pos = np.arange(len(reclust))
-
-    ax[0].bar(rey_pos,recount,color='black')
-    ax[0].set_xticks(rey_pos)
-    ax[0].set_xticklabels(reclust)
-    ax[0].set_xlabel('Cluster')
-    ax[0].set_ylabel('Counts')
-    ax[0].set_title('Cells per cluster')
-
-    ax[1].set_title('Fluorescence profile of clusters')
-    ax[1].set_xlabel('Fluorescence channel')
-    plt.yticks(rotation=0)
-    plt.tight_layout()
-
-
-    if savefig:
-        plt.savefig("reclustered_after_dip_test")
-        
-    return change_dict
 
 # Run the code outside of defining functions
 if __name__ == "__main__":
