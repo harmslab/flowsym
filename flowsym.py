@@ -37,6 +37,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from unidip import UniDip
 from copy import deepcopy
+from scipy.stats import ks_2samp
+from sklearn.mixture import GaussianMixture
 
 # from __init__ import spectrum_data
 
@@ -569,13 +571,174 @@ def dip_test(median_FL_data, total_data, alpha=0.05, save_figure=True):
     return change_dict
 
 
-# Run the code outside of defining functions
-if __name__ == "__main__":
-    sample_size = 1000
 
-    sample = create_sample(sample_size)
+def gaus_recluster(median_FL_data,total_data,tolerance=.25,savefig=True):
+    """
+    Applies a gaussian mixture model with n_components=2 
+    to try and separate rare populations of cells from 
+    the original clustering. This will apply the model 
+    and then conduct a Kolmogorov-Smirnov 2 sample test
+    to assess significant differences in distributions of 
+    the split clusters. Two criteria are used to determine 
+    whether a cluster is saved as split, or if it is preserved
+    as it originally was:
+    
+    P-value of Ks2 test: If p-value is below 1e-10 
+    
+    Difference in cluster size: if a cluster is split 
+    and the difference between the sizes of the new clusters
+    is greater than <tolerance> of the total cells in the original
+    cluster.
+    
+    parameters:
+    median_FL_data - data with median FL for each cluster
+    
+    total_data - data with all measured FL for each cluster
+    
+    tolerance - how different do the sizes of clusters have to 
+    be before they are considered actually distinct spectrally?
+    Increase this to be more stringent in splitting clusters. 
+    Decrease the value to allow more reclustering at the cost of 
+    false positives.
+    
+    savefig - save figures
+    
+    returns: 
+    reclustered - reclustered dataset of all cells analyzed
+    
+    """
+    index_max = {}
+    
+    # Get the max FL channel index for each cluster that is not 0 (i.e. unclustered)
+    for key, value in median_FL_data.items():
+        if key[-1] !='0':
+            index_max[int(key[-1])-1] = np.argmax(value)
+        
 
-    start = time.time()
-    measurements = measure(sample)
-    stop = time.time()
-    print("Time to run measure was " + str(round(stop - start, 3)) + " seconds")
+    fig, ax = plt.subplots(1,len(list(index_max.keys())),figsize=(12,3))
+
+    # create a copy of the input data to preserve new and old datasets
+    reclustered = deepcopy(total_data)
+    
+    i = 0
+    for key,value in total_data.items():
+        if key != -1:
+        
+            # Max fluorescence channel for each cluster
+            max_channel = index_max[key]
+        
+            # Apply a gaussian mixture model and split into 2 components
+            gmm = GaussianMixture(n_components=2)
+            gmm.fit(value)
+        
+            # Label each cell in our clusters with the label for how they split
+            labels = gmm.predict(value)
+        
+            # Create a dataframe of the intensity vectors and their new cluster after the split
+            frame = pd.DataFrame(value)
+            frame['cluster'] = labels
+        
+            # subset dataframe based on new cluster number
+            pre_clust1 = frame[frame['cluster']==0]
+            pre_clust2 = frame[frame['cluster']==1]
+            
+            # Remove the cluster column. Probably redundant to do things this way
+            clust1 = pre_clust1[pre_clust1.columns[:-1]]
+            clust2 = pre_clust2[pre_clust2.columns[:-1]]
+            
+            # Do a ks 2 test to see if clusters are different
+            result = ks_2samp(clust1[max_channel],clust2[max_channel])
+            
+            # Test how different our cluster populations are. If the difference between the sizes is more than <tolerance>, of the 
+            # total, then we'll say we actually found a bimodal population to split
+            clust_split = abs(len(clust1)-len(clust2))/(len(clust1)+len(clust2))
+        
+        
+            # Keep the split clusters if they meet our splitting criteria, otherwise retain original clusters from DB scan
+            if clust_split > tolerance:
+                if result[1] < 1e-10:
+                    new_val = clust1.values.tolist()
+                    new_val2 = clust2.values.tolist()
+                    
+                    
+                    reclustered[key] = new_val
+                    
+                    reclustered[max(total_data.keys())+1] = new_val2
+            
+            # Provide kde plots of the distributions to show which ones might 
+            sns.kdeplot(clust1[max_channel],ax=ax[i],color='crimson')
+            sns.kdeplot(clust2[max_channel],ax=ax[i],color='navy')
+            ax[i].get_legend().remove()
+            ax[i].set_title("Cluster " + str(key+1) + ' split')
+        
+            i += 1
+
+            
+    
+    plt.tight_layout()
+    
+    if savefig:
+        plt.savefig('gaus_mix_cluster_split')
+        
+        
+    final_reclustered = {}
+    
+    # Make a new dictionary which will have the median value for each channel in the vector for a heatmap downstream
+    for key, value in reclustered.items():
+        med_values = []
+        for i in range(len(value[0])):
+            med_values.append(np.median([row[i] for row in value]))
+            final_reclustered["Cluster " + str(key+1)] = med_values
+    
+    
+    # Create a list of column names of the vector (FL1-6)
+    search = np.random.choice(list(median_FL_data.keys()))
+    cols = ['FL' + str(i + 1) for i in range(len(median_FL_data[search]))]
+
+    
+    # Dataframe to create heatmap
+    reclustered_df = pd.DataFrame(final_reclustered,index=cols)
+
+
+    # Counts dictionary for barchart
+    reclustered_counts = {}
+
+    for key,value in reclustered.items():
+        reclustered_counts[key] = len(value)
+    
+        
+    # Replot the new clusters
+    print("Plotting reclustered data ...")
+        
+    fig2, ax = plt.subplots(1,2,figsize=(10,4))
+    sns.heatmap(reclustered_df.transpose(),cmap='copper')
+    
+    reclust = []
+    recount = []
+
+    for key, value in reclustered_counts.items():
+        reclust.append(int(key)+1)
+        recount.append(value)
+    
+    rey_pos = np.arange(len(reclust))
+
+    ax[0].bar(rey_pos,recount,color='black')
+    ax[0].set_xticks(rey_pos)
+    ax[0].set_xticklabels(reclust)
+    ax[0].set_xlabel('Cluster')
+    ax[0].set_ylabel('Counts')
+    ax[0].set_title('Cells per cluster')
+
+    ax[1].set_title('Fluorescence profile of clusters')
+    ax[1].set_xlabel('Fluorescence channel')
+    plt.yticks(rotation=0)
+    plt.tight_layout()
+    
+    if savefig:
+        plt.savefig('reclustered_after_gaus_mix_ks2')
+    
+    return reclustered
+
+
+
+
