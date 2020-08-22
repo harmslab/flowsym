@@ -46,8 +46,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'flowsym'
-copyright = "2020, Michael M. Shavlik; Luis Perez Morales"
-author = "Michael M. Shavlik; Luis Perez Morales"
+copyright = "2020, Luis Perez Morales, Michael M. Shavlik"
+author = "Luis Perez Morales, Michael M. Shavlik"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
