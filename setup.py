@@ -10,15 +10,16 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['Click>=7.0', ]
+requirements = ['Click>=7.0', 'pytest~=6.0.1', 'numpy~=1.15.4','pandas~=0.23.4', 'hdbscan~=0.8.26', 'matplotlib~=3.0.2',
+                'seaborn~=0.9.0', 'fcsy~=0.4.0', 'unidip~=0.1.1', 'scipy~=1.1.0', 'scikit-learn~=0.20.1']
 
 setup_requirements = ['pytest-runner', ]
 
 test_requirements = ['pytest>=3', ]
 
 setup(
-    author="Luis Perez Morales; Michael M. Shavlik",
-    author_email='lperezmo@uoregon.edu; mshavlik@uoregon.edu',
+    author="Luis Perez Morales, Michael M. Shavlik",
+    author_email='lperezmo@uoregon.edu, mshavlik@uoregon.edu',
     python_requires='>=3.5',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
