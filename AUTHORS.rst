@@ -5,9 +5,10 @@ Credits
 Development Lead
 ----------------
 
-* Michael M. Shavlik; Luis Perez Morales <mshavlik@uoregon.edu; lperezmo@uoregon.edu>
+* Luis Perez Morales; <lperezmo@uoregon.edu>
+* Michael M. Shavlik; <mshavlik@uoregon.edu>
 
 Contributors
 ------------
 
-None yet. Why not be the first?
+* Michael J. Harms; <harms@uoregon.edu>

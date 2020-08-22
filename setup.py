@@ -17,8 +17,8 @@ setup_requirements = ['pytest-runner', ]
 test_requirements = ['pytest>=3', ]
 
 setup(
-    author="Michael M. Shavlik; Luis Perez Morales",
-    author_email='mshavlik@uoregon.edu; lperezmo@uoregon.edu',
+    author="Luis Perez Morales; Michael M. Shavlik",
+    author_email='lperezmo@uoregon.edu; mshavlik@uoregon.edu',
     python_requires='>=3.5',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',

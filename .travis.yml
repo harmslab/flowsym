@@ -20,10 +20,10 @@ script: tox
 deploy:
   provider: pypi
   distributions: sdist bdist_wheel
-  user: mshavlik; lperezmo
+  user: lperezmo
   password:
-    secure: PLEASE_REPLACE_ME
+    secure: this_is_not_used
   on:
     tags: true
-    repo: mshavlik; lperezmo/flowsym
+    repo: lperezmo/flowsym
     python: 3.8
