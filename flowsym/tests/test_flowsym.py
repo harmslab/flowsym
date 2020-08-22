@@ -73,7 +73,7 @@ def test_create_sample():
 
 
 def test_measure(sample):
-    measured = measure(sample)
+    measured = measure(sample, create_fcs=False)
 
     assert len(list(measured.columns)) == 6
     assert type(measured) == type(pd.DataFrame())
