@@ -11,14 +11,12 @@ from copy import deepcopy
 from scipy.stats import ks_2samp
 from sklearn.mixture import GaussianMixture
 
-# To make Travis happy. Attempt absolute path first and then from raw Github file
-try:
-    spectrum_data = pd.read_csv('flowsym/data/FPbase_Spectra_updated.csv').fillna(value=0)
-except:
-    spectrum_data = pd.read_csv('https://raw.githubusercontent.com/harmslab/flowsym/master/flowsym/data/FPbase_Spectra_updated.csv').fillna(value=0)
+# Import from raw Github file
+spectrum_data = pd.read_csv('https://raw.githubusercontent.com/harmslab/flowsym/master/flowsym/data'
+                                '/FPbase_Spectra_updated.csv').fillna(value=0)
 
 
-def create_controls(size, colors=('blue', 'cyan', 'green', 'yellow', 'orange', 'red', 'far_red', 'nir', 'ir')):
+def create_controls(size, colors=['blue', 'cyan', 'green', 'yellow', 'orange', 'red', 'far_red', 'nir', 'ir']):
     """
     This is a function that takes a DataFrame size (i.e. number of controls) and
     a list of colors the user wants to run controls for.
@@ -134,9 +132,10 @@ def create_controls(size, colors=('blue', 'cyan', 'green', 'yellow', 'orange', '
 def create_sample(size, colors=['blue', 'cyan', 'green', 'yellow', 'orange', 'red', 'far_red', 'nir', 'ir'],
                   weights=[]):
     """
-    This is a function that takes a defined dataframe length for number of samples (int)
-    and excitation and emission wavelengths (list,list). Assumes equal probability of each
-    color unless specified by the user.
+    This is a function that takes a defined dataframe length for
+    number of samples (int) and excitation and emission wavelengths
+    (list,list). Assumes equal probability of each color unless
+    specified by the user.
 
     Parameters
     ----------
@@ -239,22 +238,25 @@ def create_sample(size, colors=['blue', 'cyan', 'green', 'yellow', 'orange', 're
 
 # Bandwidth on lasers is +-5 nm. channels are [450+-25, 525+-25, 600+-30, 665+-15, 720+-30, 785+-30] for filter set 2
 def measure(dataframe, lasers=[405, 488, 561, 638], channels=[1, 2, 3, 4, 5, 6],
-            create_fcs=True, outfile_name='data/sample_output.fcs'):
+            create_fcs=False, outfile_name='sample_output.fcs'):
     """
-    This is a function that will measure fluorescence intensity for any given sample
-    DataFrame and laser/channel parameters. Output will be an fcs file (default) that is
-    the same size as the sample you ran in the function. Alternatively, you can return
-    just a pandas DataFrame object by setting return_fcs=False. The user can set the output
-    file name manually to simulate creating multiple samples and measurements.
+    This is a function that will measure fluorescence
+    intensity for any given sample DataFrame and laser/channel
+    parameters. Output will be just a pandas DataFrame object
+    because return_fcs=False by default.
+
+    Alternatively, you can return fcs file if return_fcs = True.
+    The user can set the output file name manually to simulate
+    creating multiple samples and measurements.
 
     Parameters
     ----------
-    dataframe : the Dataframe of sample data that will be used to generate the simulated
-                fluorescence intensity
+    dataframe : the Dataframe of sample data that will be used
+                to generate the simulated fluorescence intensity
     lasers : laser channel parameters, default are [405, 488, 561, 638] nm
     channels: return output for select channels, options are [1,2,3,4,5,6]
-    create_fcs : create a .fcs file from generated Pandas Dataframe using 'fcsy' module.
-                 Default = True.
+    create_fcs : create a .fcs file from generated Pandas Dataframe
+                using 'fcsy' module. Default = True.
     outfile_name : name of the .fcs file created
 
     Returns
@@ -359,36 +361,49 @@ def measure(dataframe, lasers=[405, 488, 561, 638], channels=[1, 2, 3, 4, 5, 6],
     return output
 
 
-def cluster(measured_data, min_cluster_size=50, savefig=True):
+def cluster(measured_data, min_cluster_size=50, savefig=False):
     """
-    This is a function to cluster flow cytometry data that has been measured in fluorescence channels using
-    density-based spatial clustering of applications with noise (DBSCAN), which clusters based on density of points
-    in an unsupervised method. The number of clusters does not need to be explicitly stated by the users. The only
-    parameter that needs to be optimized is min_cluster_size, which is set to 50 here. But I recommend 1% of the len(
-    data) Resulting plots are a bar chart showing the number of cells in each cluster and a heatmap of the median
-    fluorescence intensity in each channel for each cluster.
+    This is a function to cluster flow cytometry data that
+    has been measured in fluorescence channels using density-based
+    spatial clustering of applications with noise (DBSCAN), which
+    clusters based on density of points in an unsupervised method.
+    The number of clusters does not need to be explicitly stated by
+    the users. The only parameter that needs to be optimized is
+    min_cluster_size, which is set to 50 here. But I recommend 1% of
+    the len(data) Resulting plots are a bar chart showing the number
+    of cells in each cluster and a heatmap of the median fluorescence
+     intensity in each channel for each cluster.
 
-    Note: clusters that are labeled '0' are cells that the DBSCAN could not cluster.
+    Note: clusters that are labeled '0' are cells that the
+          DBSCAN could not cluster.
 
-    Returns a tuple of two dictionaries. The first dictionary is the median fluorescence represented in the heatmap
-    while the second dictionary holds all the fluorescence vectors for each cluster. Both of these are needed
-    for a dip test and re-clustering.
+    Returns a tuple of two dictionaries. The first dictionary is the
+    median fluorescence represented in the heatmap while the second
+    dictionary holds all the fluorescence vectors for each cluster.
+    Both of these are needed for a dip test and re-clustering.
 
     Parameters
     ----------
-    measured_data : simulated or experimental flow cytometry data that has been measured in
-                    fluorescence channels
-    min_cluster_size : default = 50, needs to be optimized by user. Typically needs to be
-                       1% of len(data).
-    savefig: Save generated bar chart showing the number of cells in each cluster and a heat map
-             of the median fluorescence intensity in each channel for each cluster.
+    measured_data : simulated or experimental flow cytometry data
+                    that has been measured in fluorescence channels.
+    min_cluster_size : default = 50, needs to be optimized by user.
+                       Typically needs to be 1% of len(data).
+    savefig: Save generated bar chart showing the number of cells in
+             each cluster and a heat map of the median fluorescence
+             intensity in each channel for each cluster.
              Figure is saved using 'matplotlib' module.
 
     Returns
     -------
-    output : a tuple of two dictionaries. The first dictionary is the median fluorescence represented
-            in the heatmap while the second dictionary holds all the fluorescence vectors for each
-            cluster. Both of these are needed for a dip test and re-clustering.
+    (final_dictionary, cluster_dict) : a tuple of two dictionaries.
+                                        The first dictionary is the
+                                        median fluorescence represented
+                                        in the heatmap while the second
+                                        dictionary holds all the
+                                        fluorescence vectors for each
+                                        cluster.
+                                        Both of these are needed for a
+                                        dip test and re-clustering.
 
     See Also
     --------
@@ -473,32 +488,41 @@ def cluster(measured_data, min_cluster_size=50, savefig=True):
     return (final_dictionary, cluster_dict)
 
 
-def dip_test(median_FL_data, total_data, alpha=0.05, save_figure=True):
+def dip_test(median_FL_data, total_data, alpha=0.05, save_figure=False):
     """
-    Perform a Hartigan's dip test to check for unimodality in clusters and splits clusters if bimodality is found.
-    This function will take the highest intensity channel for each cluster and
-    check for bimodality to correct for errors in clustering similar fluorescence profiles.
-    Changing alpha will alter how stringent the dip test is. A higher alpha will result in higher detection
-    of bimodality, but runs a greater risk of false identification. It is important to note
-    that this dip test is relatively coarse grained and will not identify very slight populations
-    of mixed cells (e.g. 10 orange cells clustered with 1000 red cells)
+    Perform a Hartigan's dip test to check for unimodality
+    in clusters and splits clusters if bimodality is found.
+    This function will take the highest intensity channel
+    for each cluster and check for bimodality to correct for
+    errors in clustering similar fluorescence profiles.
 
-    Returns an updated clustering of the primary clustering after performing a dip test
+    Changing alpha will alter how stringent the dip test is.
+    A higher alpha will result in higher detection of bimodality,
+    but runs a greater risk of false identification. It is
+    important to note that this dip test is relatively coarse
+    grained and will not identify very slight populations of mixed
+    cells (e.g. 10 orange cells clustered with 1000 red cells).
+
+    Returns an updated clustering of the primary clustering
+    after performing a dip test.
 
     Parameters
     ----------
-    median_FL_data : dict, clustering data generated by 'flowsym.cluster' function
-    total_data : other fluorescence profiles for which errors will be corrected
-    alpha: how stringent the dip test is
-    save_figure : Save generated bar chart showing the number of cells in each cluster and a heat map
-                  of the median fluorescence intensity in each channel for each cluster.
-                  Figure is saved using 'matplotlib' module.
+    median_FL_data : dict, clustering data generated by
+                    'flowsym.cluster' function
+    total_data : other fluorescence profiles for which errors
+                 will be corrected
+    alpha : how stringent the dip test is
+    save_figure : Save generated bar chart showing the number of
+                  cells in each cluster and a heat map of the median
+                  fluorescence intensity in each channel for each
+                  cluster. Figure is saved using 'matplotlib' module.
 
     Returns
     -------
-    output : a tuple of two dictionaries. The first dictionary is the median fluorescence represented
-            in the heatmap while the second dictionary holds all the fluorescence vectors for each
-            cluster. Both of these are needed for a dip test and re-clustering.
+    change_dict : a dictory containing the corection that must be
+                  applied to similar fluorescence profiles if
+                  bimodality is found.
 
     See Also
     --------
@@ -627,7 +651,7 @@ def dip_test(median_FL_data, total_data, alpha=0.05, save_figure=True):
     return change_dict
 
 
-def gaus_recluster(median_FL_data, total_data, tolerance=.25, savefig=True):
+def gaus_recluster(median_FL_data, total_data, tolerance=.25, save_figure=False):
     """
     Applies a gaussian mixture model with n_components=2
     to try and separate rare populations of cells from
@@ -649,11 +673,11 @@ def gaus_recluster(median_FL_data, total_data, tolerance=.25, savefig=True):
     ----------
     median_FL_data : data with median FL for each cluster
     total_data : data with all measured FL for each cluster
-    tolerance : how different do the sizes of clusters have to be before they
-                are considered actually distinct spectrally?
+    tolerance : how different do the sizes of clusters have
+                to be before they are considered actually distinct?
                 Increase this to be more stringent in splitting clusters.
-                Decrease the value to allow more re-clustering at the cost of
-                false positives.
+                Decrease the value to allow more re-clustering at
+                the cost of false positives.
     save_figure : Save figure using 'matplotlib' module.
 
     Returns
@@ -712,11 +736,12 @@ def gaus_recluster(median_FL_data, total_data, tolerance=.25, savefig=True):
             # Do a ks 2 test to see if clusters are different
             result = ks_2samp(clust1[max_channel], clust2[max_channel])
 
-            # Test how different our cluster populations are. If the difference between the sizes is more than <tolerance>, of the
-            # total, then we'll say we actually found a bimodal population to split
+            # Test how different our cluster populations are. If the difference between the sizes is more than
+            # <tolerance>, of the total, then we'll say we actually found a bimodal population to split
             clust_split = abs(len(clust1) - len(clust2)) / (len(clust1) + len(clust2))
 
-            # Keep the split clusters if they meet our splitting criteria, otherwise retain original clusters from DB scan
+            # Keep the split clusters if they meet our splitting criteria, otherwise retain original clusters from DB
+            # scan
             if clust_split > tolerance:
                 if result[1] < 1e-10:
                     new_val = clust1.values.tolist()
@@ -736,7 +761,7 @@ def gaus_recluster(median_FL_data, total_data, tolerance=.25, savefig=True):
 
     plt.tight_layout()
 
-    if savefig:
+    if save_figure:
         plt.savefig('gaus_mix_cluster_split')
 
     final_reclustered = {}
@@ -788,7 +813,7 @@ def gaus_recluster(median_FL_data, total_data, tolerance=.25, savefig=True):
     plt.yticks(rotation=0)
     plt.tight_layout()
 
-    if savefig:
+    if save_figure:
         plt.savefig('reclustered_after_gaus_mix_ks2')
 
     return reclustered
