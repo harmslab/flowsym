@@ -7,6 +7,6 @@ matplotlib==3.3.1
 seaborn==0.10.1
 fcsy~=0.4.0
 unidip~=0.1.1
-scipy~=1.1.0
+scipy==1.5.2
 scikit-learn~=0.20.1
 setuptools~=49.6.0
