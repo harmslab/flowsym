@@ -11,8 +11,11 @@ from copy import deepcopy
 from scipy.stats import ks_2samp
 from sklearn.mixture import GaussianMixture
 
-
-spectrum_data = pd.read_csv('data/FPbase_Spectra_updated.csv').fillna(value=0)
+# To make Travis happy. Attempt absolute path first and then relative path.
+try:
+    spectrum_data = pd.read_csv('flowsym/data/FPbase_Spectra_updated.csv').fillna(value=0)
+except:
+    spectrum_data = pd.read_csv('data/FPbase_Spectra_updated.csv').fillna(value=0)
 
 
 def create_controls(size, colors=('blue', 'cyan', 'green', 'yellow', 'orange', 'red', 'far_red', 'nir', 'ir')):

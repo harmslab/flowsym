@@ -1,8 +1,8 @@
 """Top-level package for flowsym."""
 
 __author__ = """Luis Perez Morales, Michael M. Shavlik"""
-__email__ = 'lperezmo@uoregon.edu, mshavlik@uoregon.edu'
-__version__ = '0.1.0'
+__email__ = 'lperezmo@uoregon.edu'
+__version__ = '0.1.7'
 
 # Import the main module in this package
 from flowsym.flowsym import *

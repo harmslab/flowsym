@@ -32,13 +32,13 @@ You can either clone the public repository:
 
 .. code-block:: console
 
-    $ git clone git://github.com/mshavlik; lperezmo/flowsym
+    $ git clone git://github.com/harmslab/flowsym
 
 Or download the `tarball`_:
 
 .. code-block:: console
 
-    $ curl -OJL https://github.com/mshavlik; lperezmo/flowsym/tarball/master
+    $ curl -OJL https://github.com/harmslab/flowsym/tarball/master
 
 Once you have a copy of the source, you can install it with:
 
@@ -47,5 +47,5 @@ Once you have a copy of the source, you can install it with:
     $ python setup.py install
 
 
-.. _Github repo: https://github.com/mshavlik; lperezmo/flowsym
-.. _tarball: https://github.com/mshavlik; lperezmo/flowsym/tarball/master
+.. _Github repo: https://github.com/harmslab/flowsym
+.. _tarball: https://github.com/harmslab/flowsym/tarball/master

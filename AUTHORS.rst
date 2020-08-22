@@ -6,7 +6,7 @@ Development Lead
 ----------------
 
 * Luis Perez Morales; <lperezmo@uoregon.edu>
-* Michael M. Shavlik; <mshavlik@uoregon.edu>
+* Michael M. Shavlik; <->
 
 Contributors
 ------------
