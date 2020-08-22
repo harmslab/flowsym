@@ -21,7 +21,6 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
 
-import flowsym
 
 # -- General configuration ---------------------------------------------
 
@@ -74,8 +73,8 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
 
-# If true, `todo` and `todoList` produce output, else they produce nothing.
-todo_include_todos = False
+# # If true, `todo` and `todoList` produce output, else they produce nothing.
+# todo_include_todos = False
 
 
 # -- Options for HTML output -------------------------------------------
