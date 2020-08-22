@@ -22,20 +22,20 @@ flowsym
 
 
 Installation
---------
+------------
 1. Clone and navigate to this directory
 
 .. code-block:: console
 
     $ git clone git://github.com/harmslab/flowsym
     $ cd flowsym
-    
+
 
 2. Create a new virtual environment using requirements on `environment.yml` file.
 
 .. code-block:: console
 
-    $ conda env create -f flowsym/environment. yml
+    $ conda env create -f environment.yml
 
 3. Alternatively, install the requirements manually. Note that `hdbscan` must be installed using conda-forge channel
 
@@ -46,7 +46,7 @@ Installation
 
 
 Examples
--------
+--------
 Coming soon.
 
 

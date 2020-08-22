@@ -15,7 +15,7 @@ Types of Contributions
 Report Bugs
 ~~~~~~~~~~~
 
-Report bugs at https://github.com/lperezmo/flowsym/issues/
+Report bugs at https://github.com/harmslab/flowsym/issues/
 
 If you are reporting a bug, please include:
 

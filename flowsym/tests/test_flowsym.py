@@ -13,10 +13,6 @@ import pandas as pd
 import numpy as np
 
 
-# import spectrum data
-# spectrum_data = pd.read_csv('data/FPbase_Spectra_updated.csv').fillna(value=0)
-
-
 # Now that we've tested the create sample function, make a fixture for following function tests
 @pytest.fixture()
 def sample():

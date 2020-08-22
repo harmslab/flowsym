@@ -11,11 +11,11 @@ from copy import deepcopy
 from scipy.stats import ks_2samp
 from sklearn.mixture import GaussianMixture
 
-# To make Travis happy. Attempt absolute path first and then relative path.
+# To make Travis happy. Attempt absolute path first and then from raw Github file
 try:
     spectrum_data = pd.read_csv('flowsym/data/FPbase_Spectra_updated.csv').fillna(value=0)
 except:
-    spectrum_data = pd.read_csv('data/FPbase_Spectra_updated.csv').fillna(value=0)
+    spectrum_data = pd.read_csv('https://raw.githubusercontent.com/harmslab/flowsym/master/flowsym/data/FPbase_Spectra_updated.csv').fillna(value=0)
 
 
 def create_controls(size, colors=('blue', 'cyan', 'green', 'yellow', 'orange', 'red', 'far_red', 'nir', 'ir')):
@@ -23,11 +23,26 @@ def create_controls(size, colors=('blue', 'cyan', 'green', 'yellow', 'orange', '
     This is a function that takes a DataFrame size (i.e. number of controls) and
     a list of colors the user wants to run controls for.
 
-    :type size: int
-    :param size:
-    :type colors: list
-    :param colors: 'blue', 'cyan', 'green', 'yellow', 'orange', 'red', 'far_red', 'NIR', 'IR'
-    :return: tuple with final control results
+    Parameters
+    ----------
+    size : int, size of array
+    colors : list of colors the user wants to be included, options are:
+            'blue', 'cyan', 'green', 'yellow', 'orange', 'red', 'far_red', 'NIR',
+             'IR'
+
+    Returns
+    -------
+    output : a tuple with final control results
+
+    See Also
+    --------
+    create_sample, measure, cluster
+
+    Examples
+    --------
+    greens, reds = create_controls(10, ['green', 'red'])
+
+
     """
 
     # Check to make sure the inputs were of correct type
@@ -123,13 +138,27 @@ def create_sample(size, colors=['blue', 'cyan', 'green', 'yellow', 'orange', 're
     and excitation and emission wavelengths (list,list). Assumes equal probability of each
     color unless specified by the user.
 
-    :type colors list of strings
-    :param colors: ['blue', 'cyan', 'green', 'yellow', 'orange', 'red', 'far_red', 'NIR', 'IR']
-    :type weights list
-    :param weights (e.g. [0])
-    :type size int
-    :param size (e.g. 1000 points)
-    :return: pandas DataFrame
+    Parameters
+    ----------
+    size : int, dataframe length for number of samples
+    colors : list of colors the user wants to be included, options are:
+            'blue', 'cyan', 'green', 'yellow', 'orange', 'red', 'far_red', 'NIR',
+             'IR'
+    weights : Probability to assign to each color
+
+    Returns
+    -------
+    output : Pandas Dataframe
+
+    See Also
+    --------
+    create_controls, measure, cluster
+
+    Examples
+    --------
+    sample = create_sample(10, ['blue', 'green', 'NIR'])
+
+
     """
 
     # Check to make sure the inputs were of correct type
@@ -218,16 +247,29 @@ def measure(dataframe, lasers=[405, 488, 561, 638], channels=[1, 2, 3, 4, 5, 6],
     just a pandas DataFrame object by setting return_fcs=False. The user can set the output
     file name manually to simulate creating multiple samples and measurements.
 
-    :type lasers: list of int
-    :param dataframe:
-    :type dataframe: pandas.DataFrame
-    :param lasers:
-    :type channels list
-    :param channels:
-    :type create_fcs bool
-    :param create_fcs:
-    :param outfile_name:
-    :return: DataFrame and file
+    Parameters
+    ----------
+    dataframe : the Dataframe of sample data that will be used to generate the simulated
+                fluorescence intensity
+    lasers : laser channel parameters, default are [405, 488, 561, 638] nm
+    channels: return output for select channels, options are [1,2,3,4,5,6]
+    create_fcs : create a .fcs file from generated Pandas Dataframe using 'fcsy' module.
+                 Default = True.
+    outfile_name : name of the .fcs file created
+
+    Returns
+    -------
+    output : Pandas Dataframe
+
+    See Also
+    --------
+    create_controls, create_sample, cluster
+
+    Examples
+    --------
+    measured = measure(sample, create_fcs=False)
+
+
     """
     # Bandwidth for each fluorescence channel
     channels_information = {1: list(range(425, 475)), 2: list(range(500, 550)), 3: list(range(570, 630)),
@@ -332,14 +374,32 @@ def cluster(measured_data, min_cluster_size=50, savefig=True):
     while the second dictionary holds all the fluorescence vectors for each cluster. Both of these are needed
     for a dip test and re-clustering.
 
-    :rtype: tuple of dict
-    :type measured_data file
-    :param measured_data
-    :type min_cluster_size int
-    :param min_cluster_size
-    :type savefig bool
-    :param savefig
-    :return:
+    Parameters
+    ----------
+    measured_data : simulated or experimental flow cytometry data that has been measured in
+                    fluorescence channels
+    min_cluster_size : default = 50, needs to be optimized by user. Typically needs to be
+                       1% of len(data).
+    savefig: Save generated bar chart showing the number of cells in each cluster and a heat map
+             of the median fluorescence intensity in each channel for each cluster.
+             Figure is saved using 'matplotlib' module.
+
+    Returns
+    -------
+    output : a tuple of two dictionaries. The first dictionary is the median fluorescence represented
+            in the heatmap while the second dictionary holds all the fluorescence vectors for each
+            cluster. Both of these are needed for a dip test and re-clustering.
+
+    See Also
+    --------
+    gaus_recluster, dip_test
+
+    Examples
+    --------
+    measured = measure(sample, create_fcs=False)
+
+
+
     """
 
     # Create the clustering object
@@ -417,13 +477,38 @@ def dip_test(median_FL_data, total_data, alpha=0.05, save_figure=True):
     """
     Perform a Hartigan's dip test to check for unimodality in clusters and splits clusters if bimodality is found.
     This function will take the highest intensity channel for each cluster and
-    check for bimodality to correct for errors in clustering similar fluorescencep profiles.
+    check for bimodality to correct for errors in clustering similar fluorescence profiles.
     Changing alpha will alter how stringent the dip test is. A higher alpha will result in higher detection
     of bimodality, but runs a greater risk of false identification. It is important to note
     that this dip test is relatively coarse grained and will not identify very slight populations
     of mixed cells (e.g. 10 orange cells clustered with 1000 red cells)
 
     Returns an updated clustering of the primary clustering after performing a dip test
+
+    Parameters
+    ----------
+    median_FL_data : dict, clustering data generated by 'flowsym.cluster' function
+    total_data : other fluorescence profiles for which errors will be corrected
+    alpha: how stringent the dip test is
+    save_figure : Save generated bar chart showing the number of cells in each cluster and a heat map
+                  of the median fluorescence intensity in each channel for each cluster.
+                  Figure is saved using 'matplotlib' module.
+
+    Returns
+    -------
+    output : a tuple of two dictionaries. The first dictionary is the median fluorescence represented
+            in the heatmap while the second dictionary holds all the fluorescence vectors for each
+            cluster. Both of these are needed for a dip test and re-clustering.
+
+    See Also
+    --------
+    cluster, dip_test
+
+    Examples
+    --------
+    dip_test(median_FL_data, total_data, alpha=0.08, save_figure=False)
+
+
     """
 
     # Create a copy of the dictionary so we can retain the original clustering data
@@ -560,21 +645,30 @@ def gaus_recluster(median_FL_data, total_data, tolerance=.25, savefig=True):
     is greater than <tolerance> of the total cells in the original
     cluster.
 
-    parameters:
-    median_FL_data - data with median FL for each cluster
+    Parameters
+    ----------
+    median_FL_data : data with median FL for each cluster
+    total_data : data with all measured FL for each cluster
+    tolerance : how different do the sizes of clusters have to be before they
+                are considered actually distinct spectrally?
+                Increase this to be more stringent in splitting clusters.
+                Decrease the value to allow more re-clustering at the cost of
+                false positives.
+    save_figure : Save figure using 'matplotlib' module.
 
-    total_data - data with all measured FL for each cluster
+    Returns
+    -------
+    reclustered : reclustered dataset of all cells analyzed
 
-    tolerance - how different do the sizes of clusters have to
-    be before they are considered actually distinct spectrally?
-    Increase this to be more stringent in splitting clusters.
-    Decrease the value to allow more reclustering at the cost of
-    false positives.
+    See Also
+    --------
+    cluster, gaus_recluster, dip_test
 
-    savefig - save figures
+    Examples
+    --------
+    dip_test(median_FL_data, total_data, alpha=0.08, save_figure=False)
 
-    returns:
-    reclustered - reclustered dataset of all cells analyzed
+
 
     """
     index_max = {}
