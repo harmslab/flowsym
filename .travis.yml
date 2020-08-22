@@ -3,7 +3,22 @@ language: python
 python:
     - 3.6
     - 3.5
-install:
-    - pip install -r requirements.txt
-    - pip install -e .
+name: flowsym-environment
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - matplotlib
+  - numpy
+  - pandas
+  - scikit-learn
+  - hdbscan
+  - setuptools
+  - click
+  - pytest
+  - seaborn
+  - pip
+  - pip:
+    - fcsy
+    - unidip
 script: pytest
